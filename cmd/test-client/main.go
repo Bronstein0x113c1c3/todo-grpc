@@ -35,7 +35,7 @@ func main() {
 	defer cancel()
 
 	t := time.Now().In(time.UTC)
-	reminder, _ := ptypes.TimestampProto(t)
+	insert_at, _ := ptypes.TimestampProto(t)
 	pfx := t.Format(time.RFC3339Nano)
 
 	// Call Create
@@ -44,7 +44,8 @@ func main() {
 		ToDo: &v1.ToDo{
 			Title:       "title (" + pfx + ")",
 			Description: "description (" + pfx + ")",
-			Reminder:    reminder,
+			InsertAt:    insert_at,
+			UpdateAt: insert_at,
 		},
 	}
 	res1, err := c.Create(ctx, &req1)
@@ -73,7 +74,7 @@ func main() {
 			Id:          res2.ToDo.Id,
 			Title:       res2.ToDo.Title,
 			Description: res2.ToDo.Description + " + updated",
-			Reminder:    res2.ToDo.Reminder,
+			UpdateAt:    res2.ToDo.UpdateAt,
 		},
 	}
 	res3, err := c.Update(ctx, &req3)

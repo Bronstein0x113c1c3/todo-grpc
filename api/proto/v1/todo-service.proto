@@ -14,8 +14,9 @@ message ToDo {
     // Detail description of the todo task
     string description = 3;
 
-    // Date and time to remind the todo task
-    google.protobuf.Timestamp reminder = 4;
+    google.protobuf.Timestamp insert_at = 4;
+
+    google.protobuf.Timestamp update_at = 5;
 }
 
 // Request data to create new todo task

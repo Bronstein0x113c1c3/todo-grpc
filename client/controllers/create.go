@@ -5,18 +5,20 @@ import (
 	"log"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	"github.com/astaxie/beego"
-
 	"google.golang.org/grpc"
 
-	v1 "github.com/hieuvecto/todo-grpc/pkg/api/v1"
+	"github.com/hieuvecto/todo-grpc/pkg/api/v1"
+
 )
 
-type MainController struct {
+type CreateController struct {
 	beego.Controller
 }
 
-func (c *MainController) Get() {
+func (c *CreateController) Post() {
+
 	address := beego.AppConfig.String("grpc-server")
 	apiVersion := beego.AppConfig.String("apiVersion")
 
@@ -32,15 +34,23 @@ func (c *MainController) Get() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	req := v1.ReadAllRequest{
+	t := time.Now().In(time.UTC)
+	insert_at, _ := ptypes.TimestampProto(t)
+	// Call Create
+	req := v1.CreateRequest{
 		Api: apiVersion,
+		ToDo: &v1.ToDo{
+			Title:       c.GetString("title"),
+			Description: c.GetString("description"),
+			InsertAt:    insert_at,
+			UpdateAt: 	insert_at,
+		},
 	}
-	res, err := client.ReadAll(ctx, &req)
+	res, err := client.Create(ctx, &req)
 	if err != nil {
-		log.Fatalf("ReadAll failed: %v", err)
+		log.Fatalf("Create failed: %v", err)
 	}
-
-	c.Data["ToDos"] = res.ToDos
-
-	c.TplName = "index.tpl"
+	log.Printf("Create result: <%+v>\n\n", res)
+	
+	c.Redirect("/", 302)
 }

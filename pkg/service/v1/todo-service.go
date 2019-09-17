@@ -63,14 +63,19 @@ func (s *toDoServiceServer) Create(ctx context.Context, req *v1.CreateRequest) (
 	}
 	defer c.Close()
 
-	reminder, err := ptypes.Timestamp(req.ToDo.Reminder)
+	insert_at, err := ptypes.Timestamp(req.ToDo.InsertAt)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "reminder field has invalid format-> "+err.Error())
+		return nil, status.Error(codes.InvalidArgument, "insert_at field has invalid format-> "+err.Error())
+	}
+
+	update_at, err := ptypes.Timestamp(req.ToDo.UpdateAt)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "update_at field has invalid format-> "+err.Error())
 	}
 
 	// insert ToDo entity data
-	res, err := c.ExecContext(ctx, "INSERT INTO ToDo(`Title`, `Description`, `Reminder`) VALUES(?, ?, ?)",
-		req.ToDo.Title, req.ToDo.Description, reminder)
+	res, err := c.ExecContext(ctx, "INSERT INTO ToDo(`Title`, `Description`, `InsertAt`, `UpdateAt`) VALUES(?, ?, ?, ?)",
+		req.ToDo.Title, req.ToDo.Description, insert_at, update_at)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, "failed to insert into ToDo-> "+err.Error())
 	}
@@ -102,7 +107,7 @@ func (s *toDoServiceServer) Read(ctx context.Context, req *v1.ReadRequest) (*v1.
 	defer c.Close()
 
 	// query ToDo by ID
-	rows, err := c.QueryContext(ctx, "SELECT `ID`, `Title`, `Description`, `Reminder` FROM ToDo WHERE `ID`=?",
+	rows, err := c.QueryContext(ctx, "SELECT * FROM ToDo WHERE `ID`=?",
 		req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, "failed to select from ToDo-> "+err.Error())
@@ -119,13 +124,18 @@ func (s *toDoServiceServer) Read(ctx context.Context, req *v1.ReadRequest) (*v1.
 
 	// get ToDo data
 	var td v1.ToDo
-	var reminder time.Time
-	if err := rows.Scan(&td.Id, &td.Title, &td.Description, &reminder); err != nil {
+	var insert_at time.Time
+	var update_at time.Time
+	if err := rows.Scan(&td.Id, &td.Title, &td.Description, &insert_at, &update_at); err != nil {
 		return nil, status.Error(codes.Unknown, "failed to retrieve field values from ToDo row-> "+err.Error())
 	}
-	td.Reminder, err = ptypes.TimestampProto(reminder)
+	td.InsertAt, err = ptypes.TimestampProto(insert_at)
 	if err != nil {
-		return nil, status.Error(codes.Unknown, "reminder field has invalid format-> "+err.Error())
+		return nil, status.Error(codes.Unknown, "insert_at field has invalid format-> "+err.Error())
+	}
+	td.UpdateAt, err = ptypes.TimestampProto(update_at)
+	if err != nil {
+		return nil, status.Error(codes.Unknown, "update_at field has invalid format-> "+err.Error())
 	}
 
 	if rows.Next() {
@@ -154,14 +164,14 @@ func (s *toDoServiceServer) Update(ctx context.Context, req *v1.UpdateRequest) (
 	}
 	defer c.Close()
 
-	reminder, err := ptypes.Timestamp(req.ToDo.Reminder)
+	update_at, err := ptypes.Timestamp(req.ToDo.UpdateAt)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "reminder field has invalid format-> "+err.Error())
+		return nil, status.Error(codes.InvalidArgument, "update_at field has invalid format-> "+err.Error())
 	}
 
 	// update ToDo
-	res, err := c.ExecContext(ctx, "UPDATE ToDo SET `Title`=?, `Description`=?, `Reminder`=? WHERE `ID`=?",
-		req.ToDo.Title, req.ToDo.Description, reminder, req.ToDo.Id)
+	res, err := c.ExecContext(ctx, "UPDATE ToDo SET `Title`=?, `Description`=?, `UpdateAt`=? WHERE `ID`=?",
+		req.ToDo.Title, req.ToDo.Description, update_at, req.ToDo.Id)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, "failed to update ToDo-> "+err.Error())
 	}
@@ -233,22 +243,27 @@ func (s *toDoServiceServer) ReadAll(ctx context.Context, req *v1.ReadAllRequest)
 	defer c.Close()
 
 	// get ToDo list
-	rows, err := c.QueryContext(ctx, "SELECT `ID`, `Title`, `Description`, `Reminder` FROM ToDo")
+	rows, err := c.QueryContext(ctx, "SELECT * FROM ToDo")
 	if err != nil {
 		return nil, status.Error(codes.Unknown, "failed to select from ToDo-> "+err.Error())
 	}
 	defer rows.Close()
 
-	var reminder time.Time
+	var insert_at time.Time
+	var update_at time.Time
 	list := []*v1.ToDo{}
 	for rows.Next() {
 		td := new(v1.ToDo)
-		if err := rows.Scan(&td.Id, &td.Title, &td.Description, &reminder); err != nil {
+		if err := rows.Scan(&td.Id, &td.Title, &td.Description, &insert_at, &update_at); err != nil {
 			return nil, status.Error(codes.Unknown, "failed to retrieve field values from ToDo row-> "+err.Error())
 		}
-		td.Reminder, err = ptypes.TimestampProto(reminder)
+		td.InsertAt, err = ptypes.TimestampProto(insert_at)
 		if err != nil {
-			return nil, status.Error(codes.Unknown, "reminder field has invalid format-> "+err.Error())
+			return nil, status.Error(codes.Unknown, "insert_at field has invalid format-> "+err.Error())
+		}
+		td.UpdateAt, err = ptypes.TimestampProto(update_at)
+		if err != nil {
+			return nil, status.Error(codes.Unknown, "update_at field has invalid format-> "+err.Error())
 		}
 		list = append(list, td)
 	}
