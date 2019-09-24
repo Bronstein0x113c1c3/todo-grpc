@@ -24,6 +24,7 @@ func (c *MainController) Get() {
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("cannot connect to grpc server: %v", err)
+		c.Abort("500")
 	}
 	defer conn.Close()
 
@@ -38,6 +39,7 @@ func (c *MainController) Get() {
 	res, err := client.ReadAll(ctx, &req)
 	if err != nil {
 		log.Fatalf("ReadAll failed: %v", err)
+		c.Abort("500")
 	}
 
 	c.Data["ToDos"] = res.ToDos

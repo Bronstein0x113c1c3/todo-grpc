@@ -1,0 +1,7 @@
+.icon {
+    margin-left: 5px;
+}
+
+.icon:hover {
+    color: red;
+}
