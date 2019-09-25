@@ -1,0 +1,17 @@
+version: '3.1'
+
+services:
+  client:
+    image: golang:1.12
+    container_name: client
+    restart: always
+    network_mode: "host"
+    working_dir: /app/client
+    command: sh -c "go build . && ./client"
+    volumes:
+      - ./:/app
+      - go-pkg:/go/pkg
+
+# Names our volume
+volumes:
+  go-pkg:
